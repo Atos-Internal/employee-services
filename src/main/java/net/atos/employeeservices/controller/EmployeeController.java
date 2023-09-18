@@ -2,6 +2,7 @@ package net.atos.employeeservices.controller;
 
 import lombok.AllArgsConstructor;
 import net.atos.employeeservices.dto.EmployeeDTO;
+import net.atos.employeeservices.dto.ExportRequestDTO;
 import net.atos.employeeservices.entity.Employee;
 import net.atos.employeeservices.service.EmployeeService;
 import org.springframework.data.domain.Page;
@@ -57,5 +58,13 @@ public class EmployeeController {
     ResponseEntity<Void> deleteEmployee(@PathVariable UUID employeeId) {
         employeeService.deleteEmployee(employeeId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PostMapping(value = "/{employeeId}/export")
+    ResponseEntity<byte[]> exportEmployee(
+            @PathVariable UUID employeeId,
+            @Nullable @RequestParam String exportType,
+            @RequestBody ExportRequestDTO exportRequestDTO) {
+        return new ResponseEntity<>(employeeService.exportEmployee(employeeId, exportRequestDTO, exportType), HttpStatus.OK);
     }
 }

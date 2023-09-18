@@ -3,18 +3,27 @@ package net.atos.employeeservices.service;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.atos.employeeservices.common.enums.DocumentTypeEnum;
 import net.atos.employeeservices.common.exception.BadRequestException;
 import net.atos.employeeservices.common.exception.NotFoundException;
 import net.atos.employeeservices.common.util.EmployeeUtils;
 import net.atos.employeeservices.dto.EmployeeDTO;
+import net.atos.employeeservices.dto.ExportRequestDTO;
 import net.atos.employeeservices.entity.Employee;
 import net.atos.employeeservices.repository.jparepository.EmployeeRepository;
 import net.atos.employeeservices.repository.mapper.EmployeeMapper;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -158,5 +167,72 @@ public class EmployeeService {
     public void deleteEmployee(UUID employeeId) {
         employeeUtils.existByIdOrFail(employeeId);
         employeeRepository.deleteById(employeeId);
+    }
+
+    public byte[] exportEmployee(UUID employeeId, ExportRequestDTO exportRequestDTO, String exportType) {
+        return employeeRepository.findById(employeeId)
+            .map(employee -> {
+                try {
+                   return switch (DocumentTypeEnum.valueOf(exportRequestDTO.getDocumentType())) {
+                       case ATTESTATION_TRAVAIL -> generateAttestationTravail(
+                                employee.getFirstName(),
+                                employee.getLastName(),
+                                employee.getPosition(),
+                                employee.getIntegrationDate());
+                       case ATTESTATION_SALAIRE -> generateAttestationSalaire(
+                               employee.getFirstName(),
+                               employee.getLastName());
+                       default -> throw new NotFoundException("Document type Not Found");
+                   };
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            })
+            .orElseThrow(() -> new NotFoundException("Employee with id " + employeeId + " not found"));
+    }
+
+    public byte[] generateAttestationTravail(String firstName, String lastName, String position, LocalDate integrationDate) throws IOException {
+        // Chargez le modèle DOCX existant
+        InputStream templateStream = getClass().getResourceAsStream("/static/attestation_travail.docx");
+
+        if (templateStream != null) {
+            XWPFDocument document = new XWPFDocument(templateStream);
+
+            // Remplissez le champ du nom de l'employé
+            for (XWPFParagraph paragraph : document.getParagraphs()) {
+                for (XWPFRun run : paragraph.getRuns()) {
+                    String text = run.getText(0);
+                    if (text != null) {
+                        if (text.contains("<employeeName>")) {
+                            text = text.replace("<employeeName>", firstName + " " + lastName);
+                        }
+                        if (text.contains("<position>")) {
+                            text = text.replace("<position>", position);
+                        }
+                        if (text.contains("<integrationDate>")) {
+                            text = text.replace("<integrationDate>", integrationDate.getDayOfMonth()
+                                    + "/" + integrationDate.getMonthValue() + "/" + integrationDate.getYear());
+                        }
+                    }
+                    run.setText(text, 0);
+                }
+            }
+            try {
+                // Enregistrez le document dans un flux de sortie
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                document.write(outputStream);
+                return outputStream.toByteArray();
+            } catch (IOException e) {
+                // Gérez les exceptions appropriées ici
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            throw new NotFoundException("Document template Not Found");
+        }
+    }
+
+    public byte[] generateAttestationSalaire(String firstName, String lastName) throws IOException {
+        return null;
     }
 }
