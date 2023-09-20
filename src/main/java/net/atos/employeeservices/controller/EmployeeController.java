@@ -63,8 +63,8 @@ public class EmployeeController {
     @PostMapping(value = "/{employeeId}/export")
     ResponseEntity<byte[]> exportEmployee(
             @PathVariable UUID employeeId,
-            @Nullable @RequestParam String exportType,
+            @Nullable @RequestParam String type,
             @RequestBody ExportRequestDTO exportRequestDTO) {
-        return new ResponseEntity<>(employeeService.exportEmployee(employeeId, exportRequestDTO, exportType), HttpStatus.OK);
+        return new ResponseEntity<>(employeeService.exportEmployee(employeeId, exportRequestDTO, type), HttpStatus.OK);
     }
 }

@@ -1,5 +1,7 @@
 package net.atos.employeeservices.service;
 
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfWriter;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,27 +9,35 @@ import net.atos.employeeservices.common.enums.DocumentTypeEnum;
 import net.atos.employeeservices.common.exception.BadRequestException;
 import net.atos.employeeservices.common.exception.NotFoundException;
 import net.atos.employeeservices.common.util.EmployeeUtils;
+import net.atos.employeeservices.common.util.ExportUtils;
 import net.atos.employeeservices.dto.EmployeeDTO;
 import net.atos.employeeservices.dto.ExportRequestDTO;
 import net.atos.employeeservices.entity.Employee;
 import net.atos.employeeservices.repository.jparepository.EmployeeRepository;
 import net.atos.employeeservices.repository.mapper.EmployeeMapper;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageSz;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.core.io.ClassPathResource;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import fr.opensagres.poi.xwpf.converter.pdf.PdfOptions;
+import fr.opensagres.poi.xwpf.converter.pdf.PdfConverter;
+
+import java.io.*;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @AllArgsConstructor
@@ -175,10 +185,11 @@ public class EmployeeService {
                 try {
                    return switch (DocumentTypeEnum.valueOf(exportRequestDTO.getDocumentType())) {
                        case ATTESTATION_TRAVAIL -> generateAttestationTravail(
-                                employee.getFirstName(),
-                                employee.getLastName(),
-                                employee.getPosition(),
-                                employee.getIntegrationDate());
+                               employee.getFirstName(),
+                               employee.getLastName(),
+                               employee.getPosition(),
+                               employee.getIntegrationDate(),
+                               exportType);
                        case ATTESTATION_SALAIRE -> generateAttestationSalaire(
                                employee.getFirstName(),
                                employee.getLastName());
@@ -191,41 +202,19 @@ public class EmployeeService {
             .orElseThrow(() -> new NotFoundException("Employee with id " + employeeId + " not found"));
     }
 
-    public byte[] generateAttestationTravail(String firstName, String lastName, String position, LocalDate integrationDate) throws IOException {
-        // Chargez le modèle DOCX existant
-        InputStream templateStream = getClass().getResourceAsStream("/static/attestation_travail.docx");
+    public byte[] generateAttestationTravail(String firstName, String lastName, String position, LocalDate integrationDate, String exportType) throws IOException {
+        InputStream inputStream = getClass().getResourceAsStream("/static/attestation_travail.docx");
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        if (templateStream != null) {
-            XWPFDocument document = new XWPFDocument(templateStream);
+        if (inputStream != null) {
+            XWPFDocument document = new XWPFDocument(inputStream);
 
-            // Remplissez le champ du nom de l'employé
-            for (XWPFParagraph paragraph : document.getParagraphs()) {
-                for (XWPFRun run : paragraph.getRuns()) {
-                    String text = run.getText(0);
-                    if (text != null) {
-                        if (text.contains("<employeeName>")) {
-                            text = text.replace("<employeeName>", firstName + " " + lastName);
-                        }
-                        if (text.contains("<position>")) {
-                            text = text.replace("<position>", position);
-                        }
-                        if (text.contains("<integrationDate>")) {
-                            text = text.replace("<integrationDate>", integrationDate.getDayOfMonth()
-                                    + "/" + integrationDate.getMonthValue() + "/" + integrationDate.getYear());
-                        }
-                    }
-                    run.setText(text, 0);
-                }
-            }
-            try {
-                // Enregistrez le document dans un flux de sortie
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                document.write(outputStream);
-                return outputStream.toByteArray();
-            } catch (IOException e) {
-                // Gérez les exceptions appropriées ici
-                e.printStackTrace();
-                return null;
+            ExportUtils.AttestationTravailWriter(document, firstName, lastName, position, integrationDate);
+
+            if (exportType != null && exportType.equals("docx")) {
+                return ExportUtils.generateDOCX(outputStream, document);
+            } else {
+                return ExportUtils.generatePDF(outputStream, document);
             }
         } else {
             throw new NotFoundException("Document template Not Found");
