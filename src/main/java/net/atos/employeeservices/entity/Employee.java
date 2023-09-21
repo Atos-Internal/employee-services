@@ -82,7 +82,7 @@ public class Employee {
             columnDefinition = "DOUBLE PRECISION"
     )
     @NotNull(message = "grossMonthlySalary must be defined")
-    private Double grossMonthlySalary;
+    private Integer grossMonthlySalary;
 
     @Column(
             nullable = false,

@@ -1,11 +1,13 @@
 package net.atos.employeeservices.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import net.atos.employeeservices.dto.EmployeeDTO;
 import net.atos.employeeservices.dto.ExportRequestDTO;
 import net.atos.employeeservices.entity.Employee;
 import net.atos.employeeservices.service.EmployeeService;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
@@ -63,8 +65,9 @@ public class EmployeeController {
     @PostMapping(value = "/{employeeId}/export")
     ResponseEntity<byte[]> exportEmployee(
             @PathVariable UUID employeeId,
-            @Nullable @RequestParam String type,
-            @RequestBody ExportRequestDTO exportRequestDTO) {
-        return new ResponseEntity<>(employeeService.exportEmployee(employeeId, exportRequestDTO, type), HttpStatus.OK);
+            @Valid @RequestBody ExportRequestDTO exportRequestDTO) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=" + exportRequestDTO.getDocumentType() + ".docx");
+        return new ResponseEntity<>(employeeService.exportEmployee(employeeId, exportRequestDTO), headers, HttpStatus.OK);
     }
 }

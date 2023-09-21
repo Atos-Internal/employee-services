@@ -16,6 +16,6 @@ public class EmployeeDTO {
     private String position;
     private LocalDate integrationDate;
     private LocalDate releaseDate;
-    private Double grossMonthlySalary;
+    private Integer grossMonthlySalary;
     private String bankAccountNumber;
 }

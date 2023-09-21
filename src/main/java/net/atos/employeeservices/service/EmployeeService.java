@@ -1,7 +1,5 @@
 package net.atos.employeeservices.service;
 
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.PdfWriter;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,27 +13,13 @@ import net.atos.employeeservices.dto.ExportRequestDTO;
 import net.atos.employeeservices.entity.Employee;
 import net.atos.employeeservices.repository.jparepository.EmployeeRepository;
 import net.atos.employeeservices.repository.mapper.EmployeeMapper;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageSz;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.core.io.ClassPathResource;
-
-import fr.opensagres.poi.xwpf.converter.pdf.PdfOptions;
-import fr.opensagres.poi.xwpf.converter.pdf.PdfConverter;
 
 import java.io.*;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.List;
 
@@ -179,22 +163,27 @@ public class EmployeeService {
         employeeRepository.deleteById(employeeId);
     }
 
-    public byte[] exportEmployee(UUID employeeId, ExportRequestDTO exportRequestDTO, String exportType) {
+    public byte[] exportEmployee(UUID employeeId, ExportRequestDTO exportRequestDTO) {
         return employeeRepository.findById(employeeId)
             .map(employee -> {
                 try {
-                   return switch (DocumentTypeEnum.valueOf(exportRequestDTO.getDocumentType())) {
-                       case ATTESTATION_TRAVAIL -> generateAttestationTravail(
-                               employee.getFirstName(),
-                               employee.getLastName(),
-                               employee.getPosition(),
-                               employee.getIntegrationDate(),
-                               exportType);
-                       case ATTESTATION_SALAIRE -> generateAttestationSalaire(
-                               employee.getFirstName(),
-                               employee.getLastName());
+                   InputStream inputStream;
+                   switch (DocumentTypeEnum.valueOf(exportRequestDTO.getDocumentType())) {
+                       case ATTESTATION_TRAVAIL ->
+                               inputStream = getClass().getResourceAsStream("/static/Attestation_de_Travail.docx");
+                       case ATTESTATION_SALAIRE ->
+                               inputStream = getClass().getResourceAsStream("/static/Attestation_de_Salaire.docx");
+                       case CERTIF_TRAVAIL ->
+                               inputStream = getClass().getResourceAsStream("/static/Certificat_de_Travail.docx");
+                       case DOMICILIATION ->
+                               inputStream = getClass().getResourceAsStream("/static/Domiciliation.docx");
+                       case ORDRE_MISSION ->
+                               inputStream = getClass().getResourceAsStream("/static/Ordre_de_Mission.doc");
+                       case ATTESTATION_TITULARISATION ->
+                               inputStream = getClass().getResourceAsStream("/static/Attestaion_de_Titularisation.docx");
                        default -> throw new NotFoundException("Document type Not Found");
                    };
+                   return generateAttestation(inputStream, employee, exportRequestDTO.getExportFormat());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -202,26 +191,18 @@ public class EmployeeService {
             .orElseThrow(() -> new NotFoundException("Employee with id " + employeeId + " not found"));
     }
 
-    public byte[] generateAttestationTravail(String firstName, String lastName, String position, LocalDate integrationDate, String exportType) throws IOException {
-        InputStream inputStream = getClass().getResourceAsStream("/static/attestation_travail.docx");
+    public byte[] generateAttestation(InputStream inputStream, Employee employee, String exportFormat) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         if (inputStream != null) {
             XWPFDocument document = new XWPFDocument(inputStream);
 
-            ExportUtils.AttestationTravailWriter(document, firstName, lastName, position, integrationDate);
+            ExportUtils.AttestationWriter(document, employee);
 
-            if (exportType != null && exportType.equals("docx")) {
-                return ExportUtils.generateDOCX(outputStream, document);
-            } else {
-                return ExportUtils.generatePDF(outputStream, document);
-            }
+            return ExportUtils.generateDOCX(outputStream, document);
+
         } else {
             throw new NotFoundException("Document template Not Found");
         }
-    }
-
-    public byte[] generateAttestationSalaire(String firstName, String lastName) throws IOException {
-        return null;
     }
 }

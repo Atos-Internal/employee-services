@@ -1,13 +1,11 @@
 package net.atos.employeeservices.common.util;
 
-//import org.apache.commons.lang3.Range;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfWriter;
-import org.apache.poi.wp.usermodel.CharacterRun;
+import net.atos.employeeservices.entity.Employee;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
-import org.w3c.dom.ranges.Range;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -89,20 +87,40 @@ public class ExportUtils {
         }
     }
 
-    public static void AttestationTravailWriter(XWPFDocument document, String firstName, String lastName, String position, LocalDate integrationDate) {
+    public static void AttestationWriter(XWPFDocument document, Employee employee) {
         for (XWPFParagraph paragraph : document.getParagraphs()) {
             for (XWPFRun run : paragraph.getRuns()) {
                 String text = run.getText(0);
                 if (text != null) {
-                    if (text.contains("<employeeName>")) {
-                        text = text.replace("<employeeName>", firstName + " " + lastName);
+                    if (text.contains("employeeName")) {
+                        text = text.replace("employeeName", employee.getFirstName() + " " + employee.getLastName());
                     }
-                    if (text.contains("<position>")) {
-                        text = text.replace("<position>", position);
+                    if (text.contains("cin")) {
+                        text = text.replace("cin", employee.getCin());
                     }
-                    if (text.contains("<integrationDate>")) {
-                        text = text.replace("<integrationDate>", integrationDate.getDayOfMonth()
-                                + "/" + integrationDate.getMonthValue() + "/" + integrationDate.getYear());
+                    if (text.contains("cnssNumber")) {
+                        text = text.replace("cnssNumber", employee.getCnssNumber());
+                    }
+                    if (text.contains("position")) {
+                        text = text.replace("position", employee.getPosition());
+                    }
+                    if (text.contains("grossMonthlySalary")) {
+                        text = text.replace("grossMonthlySalary", employee.getGrossMonthlySalary().toString());
+                    }
+                    if (text.contains("bankAccountNumber")) {
+                        text = text.replace("bankAccountNumber", employee.getBankAccountNumber());
+                    }
+                    if (text.contains("integrationDate")) {
+                        text = text.replace("integrationDate", employee.getIntegrationDate().getDayOfMonth()
+                                + "/" + employee.getIntegrationDate().getMonthValue() + "/" + employee.getIntegrationDate().getYear());
+                    }
+                    if (text.contains("releaseDate")) {
+                        text = text.replace("releaseDate", employee.getReleaseDate().getDayOfMonth()
+                                + "/" + employee.getReleaseDate().getMonthValue() + "/" + employee.getReleaseDate().getYear());
+                    }
+                    if (text.contains("currentDate")) {
+                        text = text.replace("currentDate", LocalDate.now().getDayOfMonth()
+                                + "/" + LocalDate.now().getMonthValue() + "/" + LocalDate.now().getYear());
                     }
                 }
                 run.setText(text, 0);

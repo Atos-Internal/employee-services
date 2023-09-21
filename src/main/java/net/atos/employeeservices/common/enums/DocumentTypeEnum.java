@@ -13,6 +13,9 @@ public enum DocumentTypeEnum {
     DOMICILIATION("Domiciliation"),
     ATTESTATION_CONGE("Attestation de congé"),
     ATTESTATION_SALAIRE_ANNUELLE("Attestation de salaire annuelle"),
+    ORDRE_MISSION("Ordre de mission"),
+    ATTESTATION_TITULARISATION("Attestation de titularisation"),
+
     FIN_PERIODE_ESSAI("Fin période d'essaie"),
     RENOUVELLEMENT("Renouvelement"),
     CONFIRMATION("Confirmation"),
