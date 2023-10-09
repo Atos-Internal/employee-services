@@ -13,7 +13,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
+
+
 public class ExportUtils {
+
+
+
+//static fomatUtils obj = new fomatUtils();
+
 
     public static byte[] generateDOCX(ByteArrayOutputStream outputStream, XWPFDocument document) throws IOException {
         document.write(outputStream);
@@ -106,6 +113,11 @@ public class ExportUtils {
                     }
                     if (text.contains("grossMonthlySalary")) {
                         text = text.replace("grossMonthlySalary", employee.getGrossMonthlySalary().toString());
+                    }
+                    if (text.contains("grossMonthlySalary")) {
+                        String convert = fomatUtils.convert(employee.getGrossMonthlySalary());
+                        text = text.replace("grossMonthlySalary", convert);
+
                     }
                     if (text.contains("bankAccountNumber")) {
                         text = text.replace("bankAccountNumber", employee.getBankAccountNumber());
