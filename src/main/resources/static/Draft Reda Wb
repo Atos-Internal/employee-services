@@ -1,0 +1,4 @@
+if (text.contains("civility")) {
+                        String civilityReplacement = employee.getCivility().equals("Monsieur") ? "M." : "Mme";
+                        text = text.replace("civility", civilityReplacement);
+                    }
