@@ -69,6 +69,10 @@ public class EmployeeService {
             employeeUtils.unexistByCinOrFail(employee.getCin());
         }
 
+          /* if (employee.getCivility() == null || employee.getCivility().isBlank()) {
+            throw new BadRequestException("Civility must be defined");
+        }*/
+
         if (employee.getFirstName() == null || employee.getFirstName().isBlank()) {
             throw new BadRequestException("firstName must be defined");
         }
@@ -129,6 +133,10 @@ public class EmployeeService {
 
                     if (employeeDTO.getCnssNumber() != null && !employeeDTO.getCnssNumber().isBlank()) {
                         e.setCnssNumber(employeeDTO.getCnssNumber());
+                    }
+
+                    if (employeeDTO.getTypeContrat() != null && !employeeDTO.getTypeContrat().isBlank()) {
+                        e.setTypeContrat(employeeDTO.getTypeContrat());
                     }
 
                     if (employeeDTO.getPosition() != null && !employeeDTO.getPosition().isBlank()) {

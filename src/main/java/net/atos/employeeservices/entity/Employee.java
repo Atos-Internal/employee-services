@@ -39,6 +39,13 @@ public class Employee {
             nullable = false,
             columnDefinition = "TEXT"
     )
+    @NotBlank(message = "civility must be defined")
+    private String civility;
+
+    @Column(
+            nullable = false,
+            columnDefinition = "TEXT"
+    )
     @NotBlank(message = "firstName must be defined")
     private String firstName;
 
@@ -55,6 +62,48 @@ public class Employee {
     )
     @NotBlank(message = "cnssNumber must be defined")
     private String cnssNumber;
+
+    @Column(
+            nullable = true,
+            columnDefinition = "TEXT"
+    )
+    //@NotBlank(message = "typeContrat must be defined")
+    private String typeContrat;
+
+    @Column(
+            nullable = true,
+            columnDefinition = "DOUBLE PRECISION"
+    )
+    //@NotBlank(message = "cotisationCnss must be defined")
+    private double cotisationCnss;
+
+    @Column(
+            nullable = true,
+            columnDefinition = "DOUBLE PRECISION"
+    )
+    //@NotBlank(message = "cotisationCIMR must be defined")
+    private double cotisationCIMR;
+
+    @Column(
+            nullable = true,
+            columnDefinition = "DOUBLE PRECISION"
+    )
+    //@NotBlank(message = "assuranceMaladie must be defined")
+    private double assuranceMaladie;
+
+    @Column(
+            nullable = true,
+            columnDefinition = "DOUBLE PRECISION"
+    )
+    //@NotBlank(message = "retenuIR must be defined")
+    private double retenuIR;
+
+    @Column(
+            nullable = true,
+            columnDefinition = "DOUBLE PRECISION"
+    )
+    //@NotBlank(message = "totaleRetenue must be defined")
+    private double totaleRetenue;
 
     @Column(
             nullable = false,

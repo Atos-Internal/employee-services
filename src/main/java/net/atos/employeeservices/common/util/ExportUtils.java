@@ -11,6 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 
@@ -105,6 +106,10 @@ public class ExportUtils {
                     if (text.contains("cin")) {
                         text = text.replace("cin", employee.getCin());
                     }
+                    if (text.contains("civility")) {
+                        String civilityReplacement = employee.getCivility().equals("Monsieur") ? "M." : "Mme";
+                        text = text.replace("civility", civilityReplacement);
+                    }
                     if (text.contains("cnssNumber")) {
                         text = text.replace("cnssNumber", employee.getCnssNumber());
                     }
@@ -123,6 +128,15 @@ public class ExportUtils {
                         text = text.replace("bankAccountNumber", employee.getBankAccountNumber());
                     }
                     if (text.contains("integrationDate")) {
+                        text = text.replace("integrationDate", formatDate(employee.getIntegrationDate()));
+                    }
+                    if (text.contains("releaseDate")) {
+                        text = text.replace("releaseDate", formatDate(employee.getReleaseDate()));
+                    }
+                    if (text.contains("currentDate")) {
+                        text = text.replace("currentDate", formatDate(LocalDate.now()));
+                    }
+       /*             if (text.contains("integrationDate")) {
                         text = text.replace("integrationDate", employee.getIntegrationDate().getDayOfMonth()
                                 + "/" + employee.getIntegrationDate().getMonthValue() + "/" + employee.getIntegrationDate().getYear());
                     }
@@ -133,10 +147,13 @@ public class ExportUtils {
                     if (text.contains("currentDate")) {
                         text = text.replace("currentDate", LocalDate.now().getDayOfMonth()
                                 + "/" + LocalDate.now().getMonthValue() + "/" + LocalDate.now().getYear());
-                    }
+                    }*/
                 }
                 run.setText(text, 0);
             }
         }
+    }
+    public static String formatDate(LocalDate date) {
+        return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 }
