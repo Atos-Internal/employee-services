@@ -119,10 +119,9 @@ public class ExportUtils {
                     if (text.contains("grossMonthlySalary")) {
                         text = text.replace("grossMonthlySalary", employee.getGrossMonthlySalary().toString());
                     }
-                    if (text.contains("grossMonthlySalary")) {
+                    if (text.contains("grossMonthSalaryWords")) {
                         String convert = fomatUtils.convert(employee.getGrossMonthlySalary());
-                        text = text.replace("grossMonthlySalary", convert);
-
+                        text = text.replace("grossMonthSalaryWords", convert);
                     }
                     if (text.contains("bankAccountNumber")) {
                         text = text.replace("bankAccountNumber", employee.getBankAccountNumber());
