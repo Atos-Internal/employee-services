@@ -1,5 +1,7 @@
 package net.atos.employeeservices.service;
 
+import com.aspose.words.Document;
+import com.aspose.words.ImportFormatMode;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +21,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.*;
-import java.util.List;
 
 @Slf4j
 @AllArgsConstructor
@@ -29,11 +31,17 @@ import java.util.List;
 @Service
 public class EmployeeService {
 
+
     private final EmployeeRepository employeeRepository;
 
     private final EmployeeMapper employeeMapper;
 
     private final EmployeeUtils employeeUtils;
+
+
+
+    private static final String tydeDocu = ".docx";
+
 
     public Employee getEmployee(UUID employeeId) {
         return employeeRepository.findById(employeeId)
@@ -110,14 +118,14 @@ public class EmployeeService {
         employeeRepository.findById(employeeId)
                 .map(e -> {
                     if (employeeDTO.getDas() != null && !employeeDTO.getDas().isBlank()) {
-                        if(!Objects.equals(employeeDTO.getDas(), e.getDas())) {
+                        if (!Objects.equals(employeeDTO.getDas(), e.getDas())) {
                             employeeUtils.unexistByDasOrFail(employeeDTO.getDas());
                             e.setDas(employeeDTO.getDas());
                         }
                     }
 
                     if (employeeDTO.getCin() != null && !employeeDTO.getCin().isBlank()) {
-                        if(!Objects.equals(employeeDTO.getCin(), e.getCin())) {
+                        if (!Objects.equals(employeeDTO.getCin(), e.getCin())) {
                             employeeUtils.unexistByCinOrFail(employeeDTO.getCin());
                             e.setCin(employeeDTO.getCin());
                         }
@@ -147,9 +155,8 @@ public class EmployeeService {
                         e.setIntegrationDate(employeeDTO.getIntegrationDate());
                     }
 
-                    if (employeeDTO.getReleaseDate() != null) {
-                        e.setReleaseDate(employeeDTO.getReleaseDate());
-                    }
+                    e.setReleaseDate(employeeDTO.getReleaseDate());
+
 
                     if (employeeDTO.getGrossMonthlySalary() != null) {
                         e.setGrossMonthlySalary(employeeDTO.getGrossMonthlySalary());
@@ -169,48 +176,110 @@ public class EmployeeService {
     public void deleteEmployee(UUID employeeId) {
         employeeUtils.existByIdOrFail(employeeId);
         employeeRepository.deleteById(employeeId);
+
+
+    }
+
+    public byte[] exportEmployees(String documentType, List<String> UUIDswStr) {
+
+        ArrayList<UUID> UUIDs = new ArrayList<>();
+
+        for (String uuidString : UUIDswStr) {
+            try {
+                UUID uuid = UUID.fromString(uuidString);
+                UUIDs.add(uuid);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Invalid UUID string: " + uuidString);
+            }
+        }
+        List<Employee> listEmp = employeeRepository.findAllById(UUIDs);
+        try {
+            return generateAttestations(documentType, listEmp, tydeDocu);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public byte[] exportEmployee(UUID employeeId, ExportRequestDTO exportRequestDTO) {
         return employeeRepository.findById(employeeId)
-            .map(employee -> {
-                try {
-                   InputStream inputStream;
-                   switch (DocumentTypeEnum.valueOf(exportRequestDTO.getDocumentType())) {
-                       case ATTESTATION_TRAVAIL ->
-                               inputStream = getClass().getResourceAsStream("/static/Attestation_de_Travail.docx");
-                       case ATTESTATION_SALAIRE ->
-                               inputStream = getClass().getResourceAsStream("/static/Attestation_de_Salaire.docx");
-                       case CERTIF_TRAVAIL ->
-                               inputStream = getClass().getResourceAsStream("/static/Certificat_de_Travail.docx");
-                       case DOMICILIATION ->
-                               inputStream = getClass().getResourceAsStream("/static/Domiciliation.docx");
-                       case ORDRE_MISSION ->
-                               inputStream = getClass().getResourceAsStream("/static/Ordre_de_Mission.doc");
-                       case ATTESTATION_TITULARISATION ->
-                               inputStream = getClass().getResourceAsStream("/static/Attestaion_de_Titularisation.docx");
-                       default -> throw new NotFoundException("Document type Not Found");
-                   };
-                   return generateAttestation(inputStream, employee, exportRequestDTO.getExportFormat());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                .map(employee -> {
+                    try {
+                        List<Employee> listEmp = new ArrayList<>();
+                        listEmp.add(employee);
+                        Document doc ;
+                        InputStream inputStream;
+                        switch (DocumentTypeEnum.valueOf(exportRequestDTO.getDocumentType())) {
+                            case ATTESTATION_TRAVAIL -> inputStream = getClass().getResourceAsStream("/static/Attestation_de_Travail.docx");
+                            case ATTESTATION_SALAIRE -> inputStream = getClass().getResourceAsStream("/static/Attestation_de_Salaire.docx");
+                            case CERTIF_TRAVAIL -> inputStream = getClass().getResourceAsStream("/static/Certificat_de_Travail.docx");
+                            case DOMICILIATION -> inputStream = getClass().getResourceAsStream("/static/Domiciliation.docx");
+                            case ORDRE_MISSION -> inputStream = getClass().getResourceAsStream("/static/Ordre_de_Mission.doc");
+                            case ATTESTATION_TITULARISATION -> inputStream = getClass().getResourceAsStream("/static/Attestaion_de_Titularisation.docx");
+                            default -> throw new NotFoundException("Document type Not Found");
+                        }
+                        return generateAttestation(inputStream, listEmp, exportRequestDTO.getExportFormat());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .orElseThrow(() -> new NotFoundException("Employee with id " + employeeId + " not found"));
+    }
+    public byte[] generateAttestations(String documentType, List<Employee> employees, String exportFormat) throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Document output = new Document();
+        output.removeAllChildren();
+        Document doc;
+        ArrayList<Document> listDoc = new ArrayList<>() ;
+            for (Employee employee : employees) {
+                switch (DocumentTypeEnum.valueOf(documentType)) {
+                    case ATTESTATION_TRAVAIL -> doc = new Document("/home/izerari_ext/Documents/employee-services/src/main/resources/static/Attestation_de_Travail.docx");
+                    case ATTESTATION_SALAIRE -> doc = new Document("/home/izerari_ext/Documents/employee-services/src/main/resources/static/Attestation_de_Salaire.docx");
+                    case CERTIF_TRAVAIL -> doc = new Document("/static/Certificat_de_Travail.docx");
+                    case DOMICILIATION -> doc = new Document("/static/Domiciliation.docx");
+                    case ORDRE_MISSION -> doc = new Document("/static/Ordre_de_Mission.doc");
+                    case ATTESTATION_TITULARISATION -> doc = new Document("/static/Attestaion_de_Titularisation.docx");
+                    default -> throw new NotFoundException("Document type Not Found");
                 }
-            })
-            .orElseThrow(() -> new NotFoundException("Employee with id " + employeeId + " not found"));
+                Document document =ExportUtils.AttestationWriterAspose(doc, employee);
+                listDoc.add(document);
+            }
+            for (Document document : listDoc){
+                output.appendDocument(document, ImportFormatMode.KEEP_SOURCE_FORMATTING);
+            }
+
+        return ExportUtils.generateDOCX(outputStream, output);
     }
 
-    public byte[] generateAttestation(InputStream inputStream, Employee employee, String exportFormat) throws IOException {
+
+    public byte[] generateAttestation(InputStream inputStream, List<Employee> employees, String exportFormat) throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    //    InputStream inputStreamTem;
+     //   inputStreamTem = getClass().getResourceAsStream("/static/Template.docx");
+        Document output = new Document();
+        output.removeAllChildren();
 
-        if (inputStream != null) {
-            XWPFDocument document = new XWPFDocument(inputStream);
+        if (inputStream != null ) {
 
-            ExportUtils.AttestationWriter(document, employee);
+            XWPFDocument templateDocument = new XWPFDocument(inputStream);
 
-            return ExportUtils.generateDOCX(outputStream, document);
+            for (Employee employee : employees) {
+
+                ExportUtils.AttestationWriter(templateDocument, employee);
+
+            }
+            return ExportUtils.generateDOCX(outputStream, templateDocument);
 
         } else {
             throw new NotFoundException("Document template Not Found");
         }
     }
-}
+
+
+
+
+
+
+
+
+
+    }

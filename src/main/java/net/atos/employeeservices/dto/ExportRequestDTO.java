@@ -3,11 +3,20 @@ package net.atos.employeeservices.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ExportRequestDTO {
     @NotBlank(message = "documentType cannot be Blank")
     private String documentType;
     private String exportFormat;
 
-    // + tous les informations qui n'existent pas dans la table Employee
+    public List<String> UUIDs;
+
+
+
+    public void setUUIDs(List<String> UUIDs) {
+        this.UUIDs = UUIDs;
+    }
+
 }

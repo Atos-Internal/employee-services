@@ -19,6 +19,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @RestController
 @RequestMapping(value = "api/v1/employee-services/employees")
+@CrossOrigin(origins = "http://localhost:4200")
+
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -64,10 +66,23 @@ public class EmployeeController {
 
     @PostMapping(value = "/{employeeId}/export")
     ResponseEntity<byte[]> exportEmployee(
-            @PathVariable UUID employeeId,
-            @Valid @RequestBody ExportRequestDTO exportRequestDTO) {
+                @PathVariable UUID employeeId,
+                @Valid @RequestBody ExportRequestDTO exportRequestDTO) {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=" + exportRequestDTO.getDocumentType() + ".docx");
         return new ResponseEntity<>(employeeService.exportEmployee(employeeId, exportRequestDTO), headers, HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/export/{documentType}")
+    ResponseEntity<byte[]> exportEmployees(
+            @PathVariable String documentType,
+            @Valid @RequestBody ExportRequestDTO exportRequestDT) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=" + documentType + ".docx");
+        return new ResponseEntity<>(employeeService.exportEmployees(exportRequestDT.getDocumentType(), exportRequestDT.getUUIDs()), headers, HttpStatus.OK);
+    }
+
+    public EmployeeService getEmployeeService() {
+        return employeeService;
     }
 }

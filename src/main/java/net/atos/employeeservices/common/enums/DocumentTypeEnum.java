@@ -21,7 +21,9 @@ public enum DocumentTypeEnum {
     CONFIRMATION("Confirmation"),
     REFUS("Refus"),
     REDUCTION("Réduction"),
+    PNG(".png"),
     STANDARD("Standard");
+
 
     private final String label;
 }

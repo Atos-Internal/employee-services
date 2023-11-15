@@ -1,5 +1,8 @@
 package net.atos.employeeservices.common.util;
 
+import com.aspose.words.FindReplaceDirection;
+import com.aspose.words.FindReplaceOptions;
+import com.aspose.words.SaveFormat;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfWriter;
 import net.atos.employeeservices.entity.Employee;
@@ -25,6 +28,11 @@ public class ExportUtils {
 
     public static byte[] generateDOCX(ByteArrayOutputStream outputStream, XWPFDocument document) throws IOException {
         document.write(outputStream);
+        return outputStream.toByteArray();
+    }
+    public static byte[] generateDOCX(ByteArrayOutputStream outputStream, com.aspose.words.Document document) throws Exception {
+        document.save("Find-And-Replace-Text.docx");
+        document.save(outputStream, SaveFormat.DOCX);
         return outputStream.toByteArray();
     }
 
@@ -95,7 +103,22 @@ public class ExportUtils {
         }
     }
 
-    public static void AttestationWriter(XWPFDocument document, Employee employee) {
+    public static com.aspose.words.Document AttestationWriterAspose(com.aspose.words.Document document, Employee employee) throws Exception {
+        FindReplaceOptions findReplaceOptions= new FindReplaceOptions(FindReplaceDirection.FORWARD);
+        document.getRange().replace("employeeName", employee.getFirstName() + " " + employee.getLastName(), findReplaceOptions);
+        document.getRange().replace("cinVar", employee.getCin(), findReplaceOptions);
+        document.getRange().replace("civility", employee.getCivility(), findReplaceOptions);
+        document.getRange().replace("cnssNumber", employee.getCnssNumber(), findReplaceOptions);
+        document.getRange().replace("position", employee.getPosition(), findReplaceOptions);
+        document.getRange().replace("grossMonthlySalary", employee.getGrossMonthlySalary().toString(), findReplaceOptions);
+        document.getRange().replace("grossMonthSalaryWords", fomatUtils.convert(employee.getGrossMonthlySalary()), findReplaceOptions);
+        document.getRange().replace("currentDate", formatDate(LocalDate.now()),findReplaceOptions);
+        document.getRange().replace("integrationDate", formatDate(employee.getIntegrationDate()), findReplaceOptions);
+
+        return document;
+    }
+
+        public static void AttestationWriter(XWPFDocument document, Employee employee) {
         for (XWPFParagraph paragraph : document.getParagraphs()) {
             for (XWPFRun run : paragraph.getRuns()) {
                 String text = run.getText(0);
@@ -104,7 +127,9 @@ public class ExportUtils {
                         text = text.replace("employeeName", employee.getFirstName() + " " + employee.getLastName());
                     }
                     if (text.contains("cin")) {
-                        text = text.replace("cin", employee.getCin());
+                      //  text = text.replace("cin", employee.getCin());
+                        text = text.replace("cinVar", employee.getCin());
+
                     }
                     if (text.contains("civility")) {
                         String civilityReplacement = employee.getCivility().equals("Monsieur") ? "M." : "Mme";
