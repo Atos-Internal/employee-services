@@ -255,8 +255,6 @@ public class EmployeeService {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     //    InputStream inputStreamTem;
      //   inputStreamTem = getClass().getResourceAsStream("/static/Template.docx");
-        Document output = new Document();
-        output.removeAllChildren();
 
         if (inputStream != null ) {
 
